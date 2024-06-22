@@ -1,0 +1,234 @@
+2.Write a query to display all the passengers (customers) who have travelled in routes 01 to 25. Take data from the passengers_on_flights table
+
+SELECT DISTINCT
+    (customer_id), route_id
+FROM
+    passengers_on_flights
+WHERE
+    route_id BETWEEN 1 AND 25
+ORDER BY customer_id;
+
+3.Write a query to identify the number of passengers and total revenue in business class from the ticket_details table.
+
+SELECT 
+    COUNT(DISTINCT (customer_id)) AS total_customer_id,
+    ROUND(SUM(price_per_ticket * no_of_tickets), 2) AS revenue
+FROM
+    ticket_details;
+    
+
+4.Write a query to display the full name of the customer by extracting the first name and last name from the customer table.
+
+SELECT 
+    customer_id,
+    first_name,
+    last_name,
+    CONCAT(first_name, ' ', last_name) AS full_name
+FROM
+    customer;
+    
+5.Write a query to extract the customers who have registered and booked a ticket. Use data from the customer and ticket_details tables.
+
+SELECT 
+    customer_id, first_name, last_name
+FROM
+    customer
+WHERE
+    customer_id IN (SELECT DISTINCT
+            (customer_id)
+        FROM
+            ticket_details);
+            
+
+6.Write a query to identify the customer’s first name and last name based on their customer ID and brand (Emirates) from the ticket_details table.
+
+SELECT DISTINCT
+    (t.customer_id), c.first_name, c.last_name, t.brand
+FROM
+    ticket_details t
+        JOIN
+    customer c ON c.customer_id = t.customer_id;
+    
+
+7.Write a query to identify the customers who have travelled by Economy Plus class using Group By and Having clause on the passengers_on_flights table. 
+
+SELECT DISTINCT
+    (customer_id), route_id, class_id, flight_num
+FROM
+    passengers_on_flights
+GROUP BY customer_id , route_id , class_id , flight_num
+HAVING class_id = 'Economy Plus';
+
+
+8.Write a query to identify whether the revenue has crossed 10000 using the IF clause on the ticket_details table.
+SELECT 
+    SUM(no_of_tickets * price_per_ticket) AS 'Revenue',
+    IF(SUM(no_of_tickets * price_per_ticket) > 10000,
+        'Has Crossed 10000',
+        'We Have To do more Sales') AS 'Crossed 10000'
+FROM
+    ticket_details;
+    
+
+
+9. Write a query to find the maximum ticket price for each class using window functions on the ticket_details table.
+
+select distinct(class_id) , max(Price_per_ticket) over (partition by class_id ) as Max_price
+from ticket_details;
+
+
+10. Write a query to extract the passengers whose route ID is 4 by improving the speed and performance of the passengers_on_flights table.
+
+SELECT 
+    customer_id, route_id
+FROM
+    passengers_on_flights
+WHERE
+    route_id = 4;
+
+
+11. For the route ID 4, write a query to view the execution plan of the passengers_on_flights table.
+
+create index index1 on passengers_on_flights (route_id);
+SELECT 
+    *
+FROM
+    passengers_on_flights
+WHERE
+    route_id = 4;
+
+
+12. Write a query to calculate the total price of all tickets booked by a customer across different aircraft IDs using rollup function. 
+
+SELECT 
+    ROUND(SUM(no_of_tickets * price_per_ticket), 2) AS 'Revenue',
+    aircraft_id
+FROM
+    ticket_details
+GROUP BY aircraft_id WITH ROLLUP;
+
+SELECT 
+    ROUND(SUM(no_of_tickets * price_per_ticket), 2) AS 'Revenue',
+    aircraft_id
+FROM
+    ticket_details
+GROUP BY aircraft_id;
+
+
+13. Write a query to create a view with only business class customers along with the brand of airlines. 
+
+CREATE VIEW air_cargo_view1 AS
+    SELECT 
+        *
+    FROM
+        passengers_on_flights
+    WHERE
+        class_id = 'Bussiness';
+SELECT 
+    *
+FROM
+    air_cargo_view1;
+
+14. Write a query to create a stored procedure to get the details of all passengers flying between a range of routes defined in run time. 
+Also, return an error message if the table doesn't exist.
+
+DELIMITER //
+CREATE PROCEDURE ROUTES_PROC_WITH_ERROR_HANDLER()
+BEGIN
+DECLARE CONTINUE HANDLER FOR SQLSTATE '42S02'
+SELECT 'SQLSTATE Handler - Table Not Found' AS msg;
+DECLARE CONTINUE HANDLER FOR SQLEXCEPTION 
+BEGIN 
+GET DIAGNOSTICS CONDITION 1 @sqlstate =
+RETURNED_SQLSTATE, @errno = MYSQL_ERRNO,
+@text = MESSAGE_TEXT;
+SET @full_error = CONCAT("SQLEXCEPTION Handler - ERROR ", @errno, " (", @sqlstate, "): ", @text); SELECT
+@full_error AS msg;
+END;
+
+SELECT ROUTE_ID, FLIGHT_NUM FROM ROUTES ;
+END //
+
+CALL ROUTES_PROC_WITH_ERROR_HANDLER() ;
+
+
+15.Write a query to create a stored procedure that extracts all the details from the routes table where the travelled distance is more than 2000 miles.
+
+Delimiter // 
+create procedure route_pro()
+begin
+select * from routes 
+where distance_miles > 2000 ;
+end //
+
+call route_pro()
+
+
+16.Write a query to create a stored procedure that groups the distance travelled by each flight into three categories. 
+The categories are, short distance travel (SDT) for >=0 AND <= 2000 miles, intermediate distance travel (IDT) for >2000 AND <=6500,
+and long-distance travel (LDT) for >6500.
+
+DELIMITER $$
+
+CREATE PROCEDURE distance ()
+
+BEGIN
+
+SELECT * ,
+
+CASE
+
+WHEN distance_miles <= 2000 THEN 'short distance travel (SDT)'
+
+WHEN distance_miles > 6500 THEN 'long-distance travel (LDT)'
+
+ELSE 'intermediate distance travel (IDT)'
+
+END AS flight_category
+
+FROM routes;
+
+END $$;
+
+DELIMITER ;
+
+CALL distance ();
+
+
+17.Write a query to extract ticket purchase date, customer ID, class ID and specify if the complimentary services are provided for the 
+specific class using a stored function in stored procedure on the ticket_details table. 
+Condition: 
+●	If the class is Business and Economy Plus, then complimentary services are given as Yes, else it is No
+
+delimiter //
+create procedure complimentary_service(in customer_id1 int)
+begin 
+select p_date , customer_id ,class_id ,
+ case 
+ when class_id = 'Bussiness' or class_id = 'Economy Plus' then 'Complimentory service'
+ else 'No Complimentory Service'
+ end as service_distribution
+ from ticket_details
+ where customer_id = customer_id1;
+ end //
+ 
+ call complimentary_service(4);
+
+
+18.	Write a query to extract the first record of the customer whose last name ends with Scott using a cursor from the customer table.
+
+DELIMITER //
+CREATE PROCEDURE CURSOR_()
+BEGIN
+DECLARE A VARCHAR (100);
+DECLARE B VARCHAR (100);
+DECLARE CURSOR_1 CURSOR FOR SELECT FIRST_NAME , LAST_NAME FROM CUSTOMER_DETAILS
+WHERE LAST_NAME = 'SCOTT' ;
+OPEN CURSOR_1 ;
+REPEAT FETCH CURSOR_1 INTO A,B;
+UNTIL B = 0
+END REPEAT ;
+SELECT A AS FIRST_NAME , B AS LAST_NAME;
+CLOSE CURSOR_1;
+END;
+// DELIMITER 
